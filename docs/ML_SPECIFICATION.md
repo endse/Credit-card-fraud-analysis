@@ -14,6 +14,8 @@ Given an input feature vector $\mathbf{x} \in \mathbb{R}^{10}$, the model estima
 
 $$\hat{p} = P(y = 1 \mid \mathbf{x}) \in [0.0, 1.0]$$
 
+![Inside the AI Brain: The Hybrid Fraud Detection Engine](images/ai_brain_hybrid_engine.png)
+
 ---
 
 ## 2. Severe Class Imbalance Mitigation

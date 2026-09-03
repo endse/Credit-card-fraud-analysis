@@ -4,6 +4,8 @@
 **Specification**: OpenAPI 3.1.0  
 **Interactive Docs**: `http://localhost:8000/docs` (Swagger UI) / `http://localhost:8000/redoc` (ReDoc)
 
+![REST API: The Gateway to Real-Time Fraud Prevention](images/rest_api_gateway_pipeline.png)
+
 ---
 
 ## Endpoints Summary

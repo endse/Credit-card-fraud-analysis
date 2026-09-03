@@ -11,6 +11,8 @@ FraudGuard AI is architected around the core principle of **explainable, ultra-l
 
 ## 2. Tiered System Architecture
 
+![The Hybrid ML Architecture for Real-Time Fraud Detection](images/hybrid_ml_architecture.png)
+
 ```text
   ┌────────────────────────────────────────────────────────────────────────┐
   │                           PRESENTATION TIER                            │
