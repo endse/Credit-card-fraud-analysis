@@ -12,6 +12,8 @@
 
 ---
 
+![Real-Time Fraud Defense: From Swipe to Security](docs/images/hero_fraud_defense_overview.png)
+
 ![FraudGuard AI Full Dashboard](docs/images/00_full_dashboard.png)
 
 ---
