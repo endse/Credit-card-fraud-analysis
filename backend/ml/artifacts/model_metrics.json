@@ -1,0 +1,62 @@
+{
+  "dataset": {
+    "total_records": 20000,
+    "train_records": 16000,
+    "test_records": 4000,
+    "fraud_count": 800,
+    "legit_count": 19200
+  },
+  "feature_columns": [
+    "amount",
+    "average_transaction_amount",
+    "amount_deviation",
+    "transaction_hour",
+    "transaction_day",
+    "transactions_last_10_minutes",
+    "transaction_frequency",
+    "is_new_device",
+    "is_new_location",
+    "merchant_risk"
+  ],
+  "baseline": {
+    "model_name": "Logistic Regression (Baseline)",
+    "accuracy": 0.956,
+    "precision": 0.4759,
+    "recall": 0.9875,
+    "f1": 0.6423,
+    "roc_auc": 0.9966,
+    "confusion_matrix": [
+      [
+        3666,
+        174
+      ],
+      [
+        2,
+        158
+      ]
+    ]
+  },
+  "candidate": {
+    "model_name": "XGBoost (Candidate)",
+    "accuracy": 0.9818,
+    "precision": 0.69,
+    "recall": 0.9875,
+    "f1": 0.8123,
+    "roc_auc": 0.9987,
+    "confusion_matrix": [
+      [
+        3769,
+        71
+      ],
+      [
+        2,
+        158
+      ]
+    ]
+  },
+  "comparison": {
+    "f1_improvement": 0.17,
+    "roc_auc_improvement": 0.0021,
+    "recall_improvement": 0.0
+  }
+}
