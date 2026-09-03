@@ -41,7 +41,7 @@
     "roc_auc": 0.9966,
     "false_positive_rate": 0.0453,
     "false_negative_rate": 0.0125,
-    "latency_ms_per_prediction": 0.0007,
+    "latency_ms_per_prediction": 0.0005,
     "confusion_matrix": [
       [
         3666,
@@ -63,7 +63,7 @@
     "roc_auc": 0.9982,
     "false_positive_rate": 0.025,
     "false_negative_rate": 0.0,
-    "latency_ms_per_prediction": 0.0152,
+    "latency_ms_per_prediction": 0.0143,
     "confusion_matrix": [
       [
         3744,
@@ -85,7 +85,7 @@
     "roc_auc": 0.9987,
     "false_positive_rate": 0.0146,
     "false_negative_rate": 0.025,
-    "latency_ms_per_prediction": 0.0021,
+    "latency_ms_per_prediction": 0.002,
     "confusion_matrix": [
       [
         3784,
@@ -108,7 +108,7 @@
       "roc_auc": 0.9966,
       "false_positive_rate": 0.0453,
       "false_negative_rate": 0.0125,
-      "latency_ms_per_prediction": 0.0007,
+      "latency_ms_per_prediction": 0.0005,
       "confusion_matrix": [
         [
           3666,
@@ -130,7 +130,7 @@
       "roc_auc": 0.9982,
       "false_positive_rate": 0.025,
       "false_negative_rate": 0.0,
-      "latency_ms_per_prediction": 0.0152,
+      "latency_ms_per_prediction": 0.0143,
       "confusion_matrix": [
         [
           3744,
@@ -152,7 +152,7 @@
       "roc_auc": 0.9987,
       "false_positive_rate": 0.0146,
       "false_negative_rate": 0.025,
-      "latency_ms_per_prediction": 0.0021,
+      "latency_ms_per_prediction": 0.002,
       "confusion_matrix": [
         [
           3784,

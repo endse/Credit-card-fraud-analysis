@@ -19,9 +19,19 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, confusion_matrix
 )
-from xgboost import XGBClassifier
+try:
+    from xgboost import XGBClassifier
+except ImportError:
+    # Safe fallback for language servers running against unconfigured system interpreters
+    try:
+        from sklearn.ensemble import GradientBoostingClassifier as XGBClassifier
+    except ImportError:
+        XGBClassifier = None
 
-from generate_data import generate_dataset
+try:
+    from .generate_data import generate_dataset
+except ImportError:
+    from generate_data import generate_dataset
 
 ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), "artifacts")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
