@@ -26,18 +26,23 @@ def calculate_risk(transaction_data: Dict[str, Any]) -> Dict[str, Any]:
       8. Generates explainability reasons and factor breakdown
     """
     # 1. ML Probability
+    ml_weight = float(os.getenv("ML_WEIGHT", "70.0"))
+    rule_weight = float(os.getenv("RULE_WEIGHT", "30.0"))
+    approve_threshold = int(os.getenv("APPROVE_THRESHOLD", "29"))
+    review_threshold = int(os.getenv("REVIEW_THRESHOLD", "69"))
+
     fraud_prob = predict_fraud_probability(transaction_data)
-    ml_score = round(fraud_prob * 70.0, 2)
+    ml_score = round(fraud_prob * ml_weight, 2)
     
     # 2. Rule Points
     rule_pts, max_pts, triggered_rules = evaluate_rules(transaction_data)
-    rule_score = round((rule_pts / max_pts) * 30.0, 2) if max_pts > 0 else 0.0
+    rule_score = round((rule_pts / max_pts) * rule_weight, 2) if max_pts > 0 else 0.0
     
     # 3. Final Risk Score (0-100)
     final_score = int(min(100, max(0, round(ml_score + rule_score))))
     
     # 4. Risk Level (PRD Section 11)
-    if final_score <= 29:
+    if final_score <= approve_threshold:
         risk_level = "LOW"
     elif final_score <= 59:
         risk_level = "MEDIUM"
@@ -47,9 +52,9 @@ def calculate_risk(transaction_data: Dict[str, Any]) -> Dict[str, Any]:
         risk_level = "CRITICAL"
         
     # 5. Decision (PRD Section 12)
-    if final_score <= 29:
+    if final_score <= approve_threshold:
         decision = "APPROVE"
-    elif final_score <= 69:
+    elif final_score <= review_threshold:
         decision = "REVIEW"
     else:
         decision = "BLOCK"

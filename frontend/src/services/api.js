@@ -3,7 +3,7 @@
  * Connects frontend to Python FastAPI backend endpoints
  */
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export async function analyzeTransaction(transactionData) {
   const response = await fetch(`${API_BASE_URL}/api/transactions/analyze`, {

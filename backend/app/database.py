@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "transactions.db")
+DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "..", "transactions.db"))
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)

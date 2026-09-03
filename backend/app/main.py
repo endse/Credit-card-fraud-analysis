@@ -19,7 +19,13 @@ from .seed_data import seed_database_if_empty
 from .risk_engine import calculate_risk
 from ..ml.predict import predict_fraud_probability
 
-METRICS_PATH = os.path.join(os.path.dirname(__file__), "..", "ml", "artifacts", "model_metrics.json")
+from dotenv import load_dotenv
+load_dotenv()
+
+METRICS_PATH = os.getenv(
+    "METRICS_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "ml", "artifacts", "model_metrics.json")
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,10 +44,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# CORS configuration from env
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+origins = [o.strip() for o in cors_origins_env.split(",")] if cors_origins_env != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
