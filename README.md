@@ -157,13 +157,15 @@ The model evaluation script (`backend/ml/train.py`) trains both a **Logistic Reg
 
 ### 4.1 Hybrid Scoring Formula
 
-The system derives a deterministic risk score bounded in $[0, 100]$:
+The system derives a deterministic risk score bounded in `[0, 100]`:
 
-$$\text{ML Score} = \text{fraud\_probability} \times 70$$
+```text
+ML Score   = fraud_probability × 70
 
-$$\text{Rule Score} = \left(\frac{\sum \text{rule\_points}}{\text{max\_rule\_points}}\right) \times 30 \quad (\text{where } \text{max\_rule\_points} = 70)$$
+Rule Score = (rule_points / max_rule_points) × 30   [where max_rule_points = 70]
 
-$$\text{Final Risk Score} = \min\left(100, \max\left(0, \operatorname{round}(\text{ML Score} + \text{Rule Score})\right)\right)$$
+Final Risk = min(100, max(0, round(ML Score + Rule Score)))
+```
 
 ### 4.2 Deterministic Business Rules (PRD Section 13)
 
@@ -194,7 +196,7 @@ The top navigation header hosts the live model health status badge (`XGBoost + R
 Directly below, the **KPI Analytics Cluster** computes portfolio metrics across six real-time indicators:
 - **Total Analyzed**: 51 live transactions processed through the pipeline.
 - **Fraud Detected**: 13 suspicious cases with a 26% portfolio suspicion rate.
-- **Blocked (Critical)**: 8 dropped transactions with risk scores $\ge 70$.
+- **Blocked (Critical)**: 8 dropped transactions with risk scores >= 70.
 - **Under Review**: 6 transactions routed for 2FA validation.
 - **Approved (Safe)**: 35 clean transactions cleared.
 - **Avg Risk Score**: 20.5 / 100 baseline.
