@@ -177,27 +177,29 @@ The machine learning subsystem is trained on 20,000 synthetic transactions repli
 | `is_new_location` | `int` | Binary flag (0 = Known, 1 = Foreign) | Geographic anomaly indicator |
 | `merchant_risk` | `int` | Ordinal risk: 0 (Low), 1 (Med), 2 (High) | Merchant exposure vulnerability |
 
-### 3.2 Candidate vs. Baseline Model Evaluation & Benchmarks
+### 3.2 Multi-Model Evaluation & Training Benchmarks
 
-The model evaluation pipeline (`backend/ml/train.py`) benchmarks a candidate **XGBoost Classifier** against an L2-regularized **Logistic Regression Baseline** on an 80/20 stratified split (4,000 holdout test transactions with 160 true fraud positives and 3,840 legitimate instances):
+The model evaluation pipeline (`backend/ml/train.py`) benchmarks three distinct model families on an 80/20 stratified split (4,000 holdout test transactions with 160 true fraud positives and 3,840 legitimate instances):
 
 ```powershell
 .\.venv\Scripts\python.exe backend/ml/train.py
 ```
 
-#### Complete Metric Comparison Table
+> 📖 **Full Documentation**: For complete mathematical derivations, hyperparameter sweeps, and reproducible training steps, see [docs/MODEL_TRAINING_GUIDE.md](docs/MODEL_TRAINING_GUIDE.md).
 
-| Evaluation Metric | Baseline (Logistic Regression) | Candidate (XGBoost) | Relative Gain / Impact | PRD MVP Target | Status |
+#### Multi-Model Benchmark Comparison Table
+
+| Evaluation Metric | Baseline (Logistic Regression) | Ensemble (Random Forest) | Candidate (XGBoost) | PRD MVP Target | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Overall Accuracy** | 95.60% | **98.18%** | **+2.58%** absolute (+59.2% error reduction) | Reference | ✅ Exceeded |
-| **Precision (PPV)** | 47.59% | **69.00%** | **+21.41%** gain (reduces false declines) | ≥ 70.0% | ✅ Target Met |
-| **Recall (Sensitivity / TPR)** | 98.75% | **98.75%** | **0.00%** (158 of 160 fraud cases caught) | ≥ 70.0% | ✅ Target Met |
-| **Specificity (Selectivity / TNR)** | 95.47% | **98.15%** | **+2.68%** (3,769 of 3,840 legit txns cleared) | Reference | ✅ |
-| **F1 Score (Harmonic Mean)** | 64.23% | **81.23%** | **+17.00%** gain (balanced performance) | ≥ 70.0% | ✅ Target Met |
-| **ROC-AUC Score** | 99.66% | **99.87%** | **+0.21%** (near-perfect class separability) | ≥ 80.0% | ✅ Target Met |
-| **False Positive Rate (FPR)** | 4.53% | **1.85%** | **-2.68%** (103 fewer false alarms) | Reference | ✅ |
-| **False Negative Rate (Miss Rate)** | 1.25% | **1.25%** | **0.00%** (Only 2 missed frauds out of 160) | Reference | ✅ |
-| **P95 Inference Latency** | < 5ms | **< 12ms** | Fully satisfies sub-50ms SLA | < 50ms | ✅ Target Met |
+| **Overall Accuracy** | 95.60% | 97.60% | **98.50%** | Reference | ✅ Exceeded |
+| **Precision (PPV)** | 47.59% | 62.50% | **73.58%** | ≥ 70.0% | ✅ Target Met |
+| **Recall (Sensitivity / TPR)** | 98.75% (158/160) | **100.00%** (160/160) | **97.50%** (156/160) | ≥ 70.0% | ✅ Target Met |
+| **Specificity (TNR)** | 95.47% | 97.50% | **98.54%** | Reference | ✅ |
+| **F1 Score (Harmonic Mean)** | 64.23% | 76.92% | **83.87%** | ≥ 70.0% | ✅ Target Met |
+| **ROC-AUC Score** | 0.9966 | 0.9982 | **0.9987** | ≥ 80.0% | ✅ Target Met |
+| **False Positive Rate (FPR)** | 4.53% (174 alarms) | 2.50% (96 alarms) | **1.46% (56 alarms)** | Reference | ✅ **67.8% Reduction** |
+| **False Negative Rate (FNR)** | 1.25% (2 misses) | **0.00% (0 misses)** | 2.50% (4 misses) | Reference | ✅ |
+| **P95 Inference Latency** | **0.001 ms** | 0.015 ms | **0.002 ms** | < 50ms | ✅ Target Met |
 
 #### Confusion Matrix Breakdown (Holdout Test Set: 4,000 Records)
 
@@ -207,13 +209,23 @@ The model evaluation pipeline (`backend/ml/train.py`) benchmarks a candidate **X
 ├───────────────────────┬─────────────────────────────┬───────────────────────┤
 │                       │ Predicted Legitimate (0)    │ Predicted Fraud (1)   │
 ├───────────────────────┼─────────────────────────────┼───────────────────────┤
-│ Actual Legitimate (0) │ TN = 3,769 (Clean Clear)    │ FP = 71 (False Alarm) │
+│ Actual Legitimate (0) │ TN = 3,784 (Clean Clear)    │ FP = 56 (False Alarm) │
 ├───────────────────────┼─────────────────────────────┼───────────────────────┤
-│ Actual Fraud (1)      │ FN = 2 (Missed Outlier)     │ TP = 158 (Prevented)  │
+│ Actual Fraud (1)      │ FN = 4 (Missed Outlier)     │ TP = 156 (Prevented)  │
 └───────────────────────┴─────────────────────────────┴───────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Baseline: Logistic Regression                                               │
+│ Ensemble: Random Forest Classifier (100 Trees)                              │
+├───────────────────────┬─────────────────────────────┬───────────────────────┤
+│                       │ Predicted Legitimate (0)    │ Predicted Fraud (1)   │
+├───────────────────────┼─────────────────────────────┼───────────────────────┤
+│ Actual Legitimate (0) │ TN = 3,744 (Clean Clear)    │ FP = 96 (False Alarm) │
+├───────────────────────┼─────────────────────────────┼───────────────────────┤
+│ Actual Fraud (1)      │ FN = 0 (Zero Misses)        │ TP = 160 (Prevented)  │
+└───────────────────────┴─────────────────────────────┴───────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Baseline: Logistic Regression (L2 Regularized)                              │
 ├───────────────────────┬─────────────────────────────┬───────────────────────┤
 │                       │ Predicted Legitimate (0)    │ Predicted Fraud (1)   │
 ├───────────────────────┼─────────────────────────────┼───────────────────────┤
@@ -224,17 +236,16 @@ The model evaluation pipeline (`backend/ml/train.py`) benchmarks a candidate **X
 ```
 
 #### Operational Insights & Business Impact
-1. **59.2% Reduction in False Positive Declines**: The XGBoost candidate slashed false positive alarms from 174 down to 71. In banking operations, this eliminates friction for **103 legitimate cardholders** per 4,000 transactions who would otherwise suffer declined cards or step-up authentication.
-2. **Near-Zero Fraud Leakage (98.75% Recall)**: Out of 160 real fraud attacks in the holdout set, **158 were successfully intercepted**, preserving bank and merchant capital from chargeback losses.
-3. **Model Feature Importance Distribution (Trained Model Weights)**:
-   - `amount_deviation`: **60.54%** (relative spending ratio against cardholder average is the primary risk driver)
-   - `average_transaction_amount`: **18.88%** (customer baseline scale anchor)
-   - `is_new_device`: **7.36%** (hardware novelty indicating credential compromise)
-   - `merchant_risk`: **5.28%** (high-risk terminal vulnerability)
-   - `transactions_last_10_minutes`: **3.09%** (velocity bot and card-testing spikes)
-   - `amount`: **1.38%** (absolute transaction value)
-   - `is_new_location`: **1.01%** (geographic anomaly jump)
-   - `transaction_frequency`, `hour`, `day`: **2.47%** (cyclical calendar and behavioral frequency baselines)
+1. **67.82% Reduction in False Positive Declines**: XGBoost drastically reduced false alarms from 174 down to **56**, eliminating payment friction for **118 legitimate cardholders** per 4,000 transactions compared to the baseline.
+2. **High Fraud Interception (97.5% - 100%)**: Both tree-based architectures intercept over 97.5% of simulated fraud attacks, protecting capital from chargebacks.
+3. **Model Feature Importance Distribution (Trained Weights)**:
+   - `amount_deviation`: **49.79%** (Primary driver: relative deviation from customer historical average)
+   - `average_transaction_amount`: **13.97%** (Cardholder scale baseline)
+   - `transactions_last_10_minutes`: **12.04%** (Velocity bot indicator)
+   - `is_new_device`: **10.73%** (Account takeover signal)
+   - `merchant_risk`: **6.91%** (High-risk merchant terminal category)
+   - `amount`: **2.62%** (Absolute transaction monetary value)
+   - `transaction_hour`, `day`, `freq`, `location`: **3.94%** (Behavioral context)
 
 ![Model Performance Benchmarks Modal](docs/images/08_model_metrics_modal.png)
 

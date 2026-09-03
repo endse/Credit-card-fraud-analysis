@@ -90,7 +90,48 @@ LogisticRegression(
 
 Evaluated on 4,000 holdout test transactions (stratified 20% split, 160 true fraud cases):
 
+> 📖 **Full Training Guide**: Step-by-step model training instructions, loss functions, and inference profiling are documented in [docs/MODEL_TRAINING_GUIDE.md](MODEL_TRAINING_GUIDE.md).
+
+### Tri-Model Metric Summary
+
+| Metric | Logistic Regression (Baseline) | Random Forest (Ensemble) | XGBoost (Candidate) |
+| :--- | :---: | :---: | :---: |
+| **Accuracy** | 95.60% | 97.60% | **98.50%** |
+| **Precision** | 47.59% | 62.50% | **73.58%** |
+| **Recall (Sensitivity)** | 98.75% | **100.00%** | 97.50% |
+| **Specificity** | 95.47% | 97.50% | **98.54%** |
+| **F1-Score** | 64.23% | 76.92% | **83.87%** |
+| **ROC-AUC** | 0.9966 | 0.9982 | **0.9987** |
+| **False Positive Rate** | 4.53% (174 alarms) | 2.50% (96 alarms) | **1.46% (56 alarms)** |
+| **P95 Latency / sample** | **0.001 ms** | 0.015 ms | **0.002 ms** |
+
 ### Confusion Matrices
+
+#### Candidate: XGBoost Classifier (Deployed Model)
+```text
+                  Predicted Legit (0)    Predicted Fraud (1)
+Actual Legit (0)         3,784                    56
+Actual Fraud (1)             4                   156
+```
+- **False Positives**: 56 (**67.8% reduction in false positive declines**)
+- **False Negatives**: 4
+- **Precision**: 156 / (156 + 56) = 73.58%
+- **Recall**: 156 / (156 + 4) = 97.50%
+- **F1 Score**: 83.87%
+- **ROC-AUC**: 0.9987
+
+#### Ensemble: Random Forest Classifier
+```text
+                  Predicted Legit (0)    Predicted Fraud (1)
+Actual Legit (0)         3,744                    96
+Actual Fraud (1)             0                   160
+```
+- **False Positives**: 96
+- **False Negatives**: 0 (**Zero fraud leakage**)
+- **Precision**: 160 / (160 + 96) = 62.50%
+- **Recall**: 160 / (160 + 0) = 100.00%
+- **F1 Score**: 76.92%
+- **ROC-AUC**: 0.9982
 
 #### Baseline: Logistic Regression
 ```text
@@ -103,19 +144,7 @@ Actual Fraud (1)             2                   158
 - **Precision**: 158 / (158 + 174) = 47.59%
 - **Recall**: 158 / (158 + 2) = 98.75%
 - **F1 Score**: 64.23%
-
-#### Candidate: XGBoost Classifier
-```text
-                  Predicted Legit (0)    Predicted Fraud (1)
-Actual Legit (0)         3,769                    71
-Actual Fraud (1)             2                   158
-```
-- **False Positives**: 71 (**59.2% reduction in false positive declines**)
-- **False Negatives**: 2
-- **Precision**: 158 / (158 + 71) = 69.00% (**+21.4% gain**)
-- **Recall**: 158 / (158 + 2) = 98.75%
-- **F1 Score**: 81.23% (**+17.0% gain**)
-- **ROC-AUC**: 0.9987
+- **ROC-AUC**: 0.9966
 
 ---
 

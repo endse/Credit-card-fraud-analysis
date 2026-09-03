@@ -1,10 +1,11 @@
 """
 Model Training & Evaluation Pipeline
-Trains baseline Logistic Regression and candidate XGBoost model.
-Evaluates Precision, Recall, F1, ROC-AUC, and Confusion Matrix.
-Serializes model to fraud_model.pkl and metrics to model_metrics.json.
+Trains baseline Logistic Regression, Random Forest, and candidate XGBoost model.
+Evaluates Accuracy, Precision, Recall, Specificity, F1, ROC-AUC, FPR/FNR, and Latency.
+Serializes production model to fraud_model.pkl and metrics to model_metrics.json.
 """
 import os
+import time
 import json
 import joblib
 import numpy as np
@@ -13,6 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, confusion_matrix
@@ -38,33 +40,51 @@ FEATURE_COLUMNS = [
 ]
 
 def evaluate_model(model, X_test, y_test, model_name: str) -> dict:
+    start_time = time.perf_counter()
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
+    total_time = (time.perf_counter() - start_time) * 1000.0  # in ms
+    latency_per_sample = total_time / max(1, len(X_test))
     
     acc = float(accuracy_score(y_test, y_pred))
     prec = float(precision_score(y_test, y_pred, zero_division=0))
     rec = float(recall_score(y_test, y_pred, zero_division=0))
     f1 = float(f1_score(y_test, y_pred, zero_division=0))
     roc_auc = float(roc_auc_score(y_test, y_proba))
-    cm = confusion_matrix(y_test, y_pred).tolist()
+    cm = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+    
+    specificity = float(tn / (tn + fp)) if (tn + fp) > 0 else 0.0
+    fpr = float(fp / (tn + fp)) if (tn + fp) > 0 else 0.0
+    fnr = float(fn / (fn + tp)) if (fn + tp) > 0 else 0.0
     
     metrics = {
         "model_name": model_name,
         "accuracy": round(acc, 4),
         "precision": round(prec, 4),
         "recall": round(rec, 4),
+        "specificity": round(specificity, 4),
         "f1": round(f1, 4),
         "roc_auc": round(roc_auc, 4),
-        "confusion_matrix": cm
+        "false_positive_rate": round(fpr, 4),
+        "false_negative_rate": round(fnr, 4),
+        "latency_ms_per_prediction": round(latency_per_sample, 4),
+        "confusion_matrix": cm.tolist()
     }
     
-    print(f"\n--- {model_name} Results ---")
-    print(f"Accuracy:  {metrics['accuracy']:.4f}")
-    print(f"Precision: {metrics['precision']:.4f}")
-    print(f"Recall:    {metrics['recall']:.4f}")
-    print(f"F1 Score:  {metrics['f1']:.4f}")
-    print(f"ROC-AUC:   {metrics['roc_auc']:.4f}")
-    print(f"Confusion Matrix: {cm}")
+    print(f"\n========================================================")
+    print(f" {model_name} Evaluation")
+    print(f"========================================================")
+    print(f" Accuracy:       {metrics['accuracy'] * 100:.2f}%")
+    print(f" Precision:      {metrics['precision'] * 100:.2f}%")
+    print(f" Recall (TPR):   {metrics['recall'] * 100:.2f}% ({tp}/{tp + fn} frauds caught)")
+    print(f" Specificity:    {metrics['specificity'] * 100:.2f}% ({tn}/{tn + fp} legit cleared)")
+    print(f" F1 Score:       {metrics['f1'] * 100:.2f}%")
+    print(f" ROC-AUC:        {metrics['roc_auc']:.4f}")
+    print(f" False Pos Rate: {metrics['false_positive_rate'] * 100:.2f}% ({fp} false alarms)")
+    print(f" False Neg Rate: {metrics['false_negative_rate'] * 100:.2f}% ({fn} missed frauds)")
+    print(f" Latency/sample: {metrics['latency_ms_per_prediction']:.3f} ms")
+    print(f" Confusion Matrix:\n   [TN: {tn}, FP: {fp}]\n   [FN: {fn}, TP: {tp}]")
     
     return metrics
 
@@ -89,8 +109,9 @@ def train_and_export():
     
     scale_pos_weight = (len(y_train) - sum(y_train)) / max(1, sum(y_train))
     
-    # 1. Baseline Model: Logistic Regression
-    print("\nTraining Baseline: Logistic Regression...")
+    print("\n--------------------------------------------------------")
+    print(" 1. Training Baseline: Logistic Regression...")
+    print("--------------------------------------------------------")
     baseline_pipeline = Pipeline([
         ("scaler", StandardScaler()),
         ("classifier", LogisticRegression(class_weight="balanced", max_iter=1000, random_state=42))
@@ -98,8 +119,25 @@ def train_and_export():
     baseline_pipeline.fit(X_train, y_train)
     baseline_metrics = evaluate_model(baseline_pipeline, X_test, y_test, "Logistic Regression (Baseline)")
     
-    # 2. Candidate Production Model: XGBoost
-    print("\nTraining Candidate: XGBoost Classifier...")
+    print("\n--------------------------------------------------------")
+    print(" 2. Training Multi-Model Ensemble: Random Forest...")
+    print("--------------------------------------------------------")
+    rf_pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("classifier", RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            class_weight="balanced",
+            random_state=42,
+            n_jobs=-1
+        ))
+    ])
+    rf_pipeline.fit(X_train, y_train)
+    rf_metrics = evaluate_model(rf_pipeline, X_test, y_test, "Random Forest Classifier")
+    
+    print("\n--------------------------------------------------------")
+    print(" 3. Training Production Candidate: XGBoost Classifier...")
+    print("--------------------------------------------------------")
     xgb_pipeline = Pipeline([
         ("scaler", StandardScaler()),
         ("classifier", XGBClassifier(
@@ -108,6 +146,8 @@ def train_and_export():
             learning_rate=0.08,
             scale_pos_weight=scale_pos_weight,
             eval_metric="logloss",
+            subsample=0.85,
+            colsample_bytree=0.85,
             random_state=42,
             n_jobs=-1
         ))
@@ -115,34 +155,57 @@ def train_and_export():
     xgb_pipeline.fit(X_train, y_train)
     candidate_metrics = evaluate_model(xgb_pipeline, X_test, y_test, "XGBoost (Candidate)")
     
-    # Save candidate model pipeline
+    # Feature importances from XGBoost
+    xgb_step = xgb_pipeline.named_steps["classifier"]
+    xgb_importances = {
+        col: round(float(imp), 4)
+        for col, imp in sorted(
+            zip(FEATURE_COLUMNS, xgb_step.feature_importances_),
+            key=lambda item: item[1],
+            reverse=True
+        )
+    }
+    
+    # Save candidate model pipeline (used in FastAPI backend)
     model_path = os.path.join(ARTIFACTS_DIR, "fraud_model.pkl")
     joblib.dump(xgb_pipeline, model_path)
-    print(f"\nSaved trained model pipeline to: {model_path}")
+    print(f"\n[OK] Saved candidate model pipeline to: {model_path}")
     
-    # Save combined metrics
+    # Save combined metrics (preserving backwards-compatibility)
     metrics_summary = {
         "dataset": {
             "total_records": len(df),
             "train_records": len(X_train),
             "test_records": len(X_test),
             "fraud_count": int(df["is_fraud"].sum()),
-            "legit_count": int((df["is_fraud"] == 0).sum())
+            "legit_count": int((df["is_fraud"] == 0).sum()),
+            "fraud_prevalence_pct": round(float(df["is_fraud"].mean() * 100), 2)
         },
         "feature_columns": FEATURE_COLUMNS,
+        "feature_importances": xgb_importances,
         "baseline": baseline_metrics,
+        "random_forest": rf_metrics,
         "candidate": candidate_metrics,
+        "models": {
+            "logistic_regression": baseline_metrics,
+            "random_forest": rf_metrics,
+            "xgboost": candidate_metrics
+        },
         "comparison": {
             "f1_improvement": round(candidate_metrics["f1"] - baseline_metrics["f1"], 4),
             "roc_auc_improvement": round(candidate_metrics["roc_auc"] - baseline_metrics["roc_auc"], 4),
-            "recall_improvement": round(candidate_metrics["recall"] - baseline_metrics["recall"], 4)
+            "recall_improvement": round(candidate_metrics["recall"] - baseline_metrics["recall"], 4),
+            "false_positive_reduction_pct": round(
+                ((baseline_metrics["confusion_matrix"][0][1] - candidate_metrics["confusion_matrix"][0][1]) /
+                 max(1, baseline_metrics["confusion_matrix"][0][1])) * 100, 2
+            )
         }
     }
     
     metrics_path = os.path.join(ARTIFACTS_DIR, "model_metrics.json")
     with open(metrics_path, "w") as f:
         json.dump(metrics_summary, f, indent=2)
-    print(f"Saved metrics summary to: {metrics_path}")
+    print(f"[OK] Saved full metrics summary to: {metrics_path}")
     
     return metrics_summary
 

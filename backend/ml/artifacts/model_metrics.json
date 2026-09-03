@@ -4,7 +4,8 @@
     "train_records": 16000,
     "test_records": 4000,
     "fraud_count": 800,
-    "legit_count": 19200
+    "legit_count": 19200,
+    "fraud_prevalence_pct": 4.0
   },
   "feature_columns": [
     "amount",
@@ -18,13 +19,29 @@
     "is_new_location",
     "merchant_risk"
   ],
+  "feature_importances": {
+    "amount_deviation": 0.4979,
+    "average_transaction_amount": 0.1397,
+    "transactions_last_10_minutes": 0.1204,
+    "is_new_device": 0.1073,
+    "merchant_risk": 0.0691,
+    "amount": 0.0262,
+    "transaction_hour": 0.01,
+    "transaction_frequency": 0.01,
+    "is_new_location": 0.01,
+    "transaction_day": 0.0093
+  },
   "baseline": {
     "model_name": "Logistic Regression (Baseline)",
     "accuracy": 0.956,
     "precision": 0.4759,
     "recall": 0.9875,
+    "specificity": 0.9547,
     "f1": 0.6423,
     "roc_auc": 0.9966,
+    "false_positive_rate": 0.0453,
+    "false_negative_rate": 0.0125,
+    "latency_ms_per_prediction": 0.0007,
     "confusion_matrix": [
       [
         3666,
@@ -36,27 +53,122 @@
       ]
     ]
   },
-  "candidate": {
-    "model_name": "XGBoost (Candidate)",
-    "accuracy": 0.9818,
-    "precision": 0.69,
-    "recall": 0.9875,
-    "f1": 0.8123,
-    "roc_auc": 0.9987,
+  "random_forest": {
+    "model_name": "Random Forest Classifier",
+    "accuracy": 0.976,
+    "precision": 0.625,
+    "recall": 1.0,
+    "specificity": 0.975,
+    "f1": 0.7692,
+    "roc_auc": 0.9982,
+    "false_positive_rate": 0.025,
+    "false_negative_rate": 0.0,
+    "latency_ms_per_prediction": 0.0152,
     "confusion_matrix": [
       [
-        3769,
-        71
+        3744,
+        96
       ],
       [
-        2,
-        158
+        0,
+        160
       ]
     ]
   },
+  "candidate": {
+    "model_name": "XGBoost (Candidate)",
+    "accuracy": 0.985,
+    "precision": 0.7358,
+    "recall": 0.975,
+    "specificity": 0.9854,
+    "f1": 0.8387,
+    "roc_auc": 0.9987,
+    "false_positive_rate": 0.0146,
+    "false_negative_rate": 0.025,
+    "latency_ms_per_prediction": 0.0021,
+    "confusion_matrix": [
+      [
+        3784,
+        56
+      ],
+      [
+        4,
+        156
+      ]
+    ]
+  },
+  "models": {
+    "logistic_regression": {
+      "model_name": "Logistic Regression (Baseline)",
+      "accuracy": 0.956,
+      "precision": 0.4759,
+      "recall": 0.9875,
+      "specificity": 0.9547,
+      "f1": 0.6423,
+      "roc_auc": 0.9966,
+      "false_positive_rate": 0.0453,
+      "false_negative_rate": 0.0125,
+      "latency_ms_per_prediction": 0.0007,
+      "confusion_matrix": [
+        [
+          3666,
+          174
+        ],
+        [
+          2,
+          158
+        ]
+      ]
+    },
+    "random_forest": {
+      "model_name": "Random Forest Classifier",
+      "accuracy": 0.976,
+      "precision": 0.625,
+      "recall": 1.0,
+      "specificity": 0.975,
+      "f1": 0.7692,
+      "roc_auc": 0.9982,
+      "false_positive_rate": 0.025,
+      "false_negative_rate": 0.0,
+      "latency_ms_per_prediction": 0.0152,
+      "confusion_matrix": [
+        [
+          3744,
+          96
+        ],
+        [
+          0,
+          160
+        ]
+      ]
+    },
+    "xgboost": {
+      "model_name": "XGBoost (Candidate)",
+      "accuracy": 0.985,
+      "precision": 0.7358,
+      "recall": 0.975,
+      "specificity": 0.9854,
+      "f1": 0.8387,
+      "roc_auc": 0.9987,
+      "false_positive_rate": 0.0146,
+      "false_negative_rate": 0.025,
+      "latency_ms_per_prediction": 0.0021,
+      "confusion_matrix": [
+        [
+          3784,
+          56
+        ],
+        [
+          4,
+          156
+        ]
+      ]
+    }
+  },
   "comparison": {
-    "f1_improvement": 0.17,
+    "f1_improvement": 0.1964,
     "roc_auc_improvement": 0.0021,
-    "recall_improvement": 0.0
+    "recall_improvement": -0.0125,
+    "false_positive_reduction_pct": 67.82
   }
 }
